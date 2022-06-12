@@ -1,11 +1,4 @@
-import numpy as np
-import torch
+alpha_plan = [0.1] * 60 + [0.01] * 40
 
 
-test_data = np.load('./cifar-10-100n-main/data/CIFAR-100_human.npy', allow_pickle=True)
-
-# print(test_data)
-
-# test_data = torch.load('./cifar-10-100n-main/data/CIFAR-100_human.pt')
-
-print(test_data)
+print(alpha_plan)
