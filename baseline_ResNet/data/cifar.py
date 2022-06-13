@@ -34,6 +34,7 @@ class CIFAR10(data.Dataset):
             downloaded again.
 
     """
+
     base_folder = 'cifar-10-batches-py'
     url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
     filename = "cifar-10-python.tar.gz"
@@ -54,6 +55,7 @@ class CIFAR10(data.Dataset):
                  transform=None, target_transform=None,
                  download=False,
                  noise_type=None, noise_path=None, is_human=True):
+                 
         self.root = os.path.expanduser(root)
         self.transform = transform
         self.target_transform = target_transform
@@ -88,14 +90,14 @@ class CIFAR10(data.Dataset):
 
             self.train_data = np.concatenate(self.train_data)
             self.train_data = self.train_data.reshape((50000, 3, 32, 32))
-            self.train_data = self.train_data.transpose(
-                (0, 2, 3, 1))  # convert to HWC
+            self.train_data = self.train_data.transpose((0, 2, 3, 1))  # convert to HWC
 
             # if noise_type is not None:
             if noise_type != 'clean':
                 # Load human noisy labels
                 train_noisy_labels = self.load_label()
                 self.train_noisy_labels = train_noisy_labels.tolist()
+
                 print(f'noisy labels loaded from {self.noise_path}')
 
                 if not is_human:
@@ -108,8 +110,7 @@ class CIFAR10(data.Dataset):
 
                     print(f'Noise transition matrix is \n{T}')
 
-                    train_noisy_labels = multiclass_noisify(y=np.array(
-                        self.train_labels), P=T, random_state=0)  # np.random.randint(1,10086)
+                    train_noisy_labels = multiclass_noisify(y=np.array(self.train_labels), P=T, random_state=0)  # np.random.randint(1,10086)
 
                     self.train_noisy_labels = train_noisy_labels.tolist()
 
@@ -125,17 +126,13 @@ class CIFAR10(data.Dataset):
                 for i in range(len(self.train_noisy_labels)):
                     idx_each_class_noisy[self.train_noisy_labels[i]].append(i)
 
-                class_size_noisy = [len(idx_each_class_noisy[i])
-                                    for i in range(10)]
+                class_size_noisy = [len(idx_each_class_noisy[i]) for i in range(10)]
 
-                self.noise_prior = np.array(
-                    class_size_noisy)/sum(class_size_noisy)
+                self.noise_prior = np.array(class_size_noisy)/sum(class_size_noisy)
 
-                print(
-                    f'The noisy data ratio in each class is {self.noise_prior}')
+                print(f'The noisy data ratio in each class is {self.noise_prior}')
 
-                self.noise_or_not = np.transpose(
-                    self.train_noisy_labels) != np.transpose(self.train_labels)
+                self.noise_or_not = np.transpose(self.train_noisy_labels) != np.transpose(self.train_labels)
 
                 self.actual_noise_rate = np.sum(self.noise_or_not)/50000
 

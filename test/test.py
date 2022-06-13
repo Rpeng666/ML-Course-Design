@@ -1,4 +1,6 @@
-alpha_plan = [0.1] * 60 + [0.01] * 40
+import torch
 
 
-print(alpha_plan)
+a = torch.zeros(size=(2,3,4))
+
+print(a[0])

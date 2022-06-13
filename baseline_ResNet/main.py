@@ -144,7 +144,7 @@ for epoch in range(n_epoch):
 
     if (test_acc > best_acc):
         best_acc = test_acc
-        torch.save(model, f'./baseline_ResNet/model_save/model_epoch_{epoch}_acc_{best_acc}.pt')
+        torch.save(model, f'./baseline_ResNet/history/model/model_epoch_{epoch}_acc_{best_acc}.pt')
         
     # save results
     print('train acc on train images is ', train_acc)
