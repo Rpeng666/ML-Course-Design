@@ -36,6 +36,7 @@ def train(epoch, train_loader, model, optimizer):
     train_correct = 0
 
     for i, (images, labels, indexes) in enumerate(train_loader):
+
         ind = indexes.cpu().numpy().transpose()
         batch_size = len(ind)
 
@@ -49,16 +50,21 @@ def train(epoch, train_loader, model, optimizer):
         # prec = 0.0
         train_total += 1
         train_correct += prec
-        loss = F.cross_entropy(logits, labels, reduce=True)
+
+        loss = F.cross_entropy(logits, labels, reduction='mean')
 
         optimizer.zero_grad()
+
         loss.backward()
+
         optimizer.step()
+
         if (i+1) % 10 == 0:
             print('Epoch [%d/%d], Iter [%d/%d] Training Accuracy: %.4F, Loss: %.4f'
                   % (epoch+1, n_epoch, i+1, len(train_dataset)//batch_size, prec, loss.data))
 
     train_acc = float(train_correct)/float(train_total)
+
     return train_acc
 
 
@@ -67,6 +73,7 @@ def evaluate(test_loader, model):
     model.eval()    # Change model to 'eval' mode.
     correct = 0
     total = 0
+
     for images, labels, _ in test_loader:
         images = Variable(images).cuda()
         logits = model(images)
@@ -74,12 +81,13 @@ def evaluate(test_loader, model):
         _, pred = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (pred.cpu() == labels).sum()
+
     acc = 100*float(correct)/float(total)
 
     return acc
 
 
-#####################################main code ################################################
+##################################### main code ################################################
 
 
 # Hyper Parameters
@@ -89,14 +97,15 @@ dataset = 'cifar10'
 noise_type = 'clean'
 noise_path = './data/CIFAR-100_human.pt'
 n_epoch = 100
+best_acc = 0
+
 
 
 
 train_dataset, test_dataset, num_classes, num_training_samples = input_dataset(dataset, noise_type, noise_path)
 
 
-print('train_labels:', len(train_dataset.train_labels),
-      train_dataset.train_labels[:10])
+print('train_labels:', len(train_dataset.train_labels), train_dataset.train_labels[:10])
 
 
 # load model
@@ -106,10 +115,10 @@ model = ResNet34(num_classes)
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=0.0005, momentum=0.9)
 
 
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=128, shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=256, shuffle=True)
 
 
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=False)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=128, shuffle=False)
 
 alpha_plan = [0.1] * 60 + [0.01] * 40
 
@@ -123,7 +132,7 @@ train_acc = 0
 
 for epoch in range(n_epoch):
     # train models
-    print(f'epoch {epoch}')
+    print(f'epoch {epoch + 1}')
     adjust_learning_rate(optimizer, epoch, alpha_plan)
 
     model.train()
@@ -133,6 +142,10 @@ for epoch in range(n_epoch):
     # evaluate models
     test_acc = evaluate(test_loader=test_loader, model=model)
 
+    if (test_acc > best_acc):
+        best_acc = test_acc
+        torch.save(model, f'./baseline_ResNet/model_save/model_epoch_{epoch}_acc_{best_acc}.pt')
+        
     # save results
     print('train acc on train images is ', train_acc)
     print('test acc on test images is ', test_acc)

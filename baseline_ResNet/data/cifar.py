@@ -63,8 +63,9 @@ class CIFAR10(data.Dataset):
         self.nb_classes = 10
         self.noise_path = noise_path
         idx_each_class_noisy = [[] for i in range(10)]
+
         if download:
-           self.download()
+            self.download()
 
         # now load the picked numpy arrays
         if self.train:
@@ -89,7 +90,8 @@ class CIFAR10(data.Dataset):
             self.train_data = self.train_data.reshape((50000, 3, 32, 32))
             self.train_data = self.train_data.transpose(
                 (0, 2, 3, 1))  # convert to HWC
-            #if noise_type is not None:
+
+            # if noise_type is not None:
             if noise_type != 'clean':
                 # Load human noisy labels
                 train_noisy_labels = self.load_label()
@@ -98,61 +100,86 @@ class CIFAR10(data.Dataset):
 
                 if not is_human:
                     T = np.zeros((self.nb_classes, self.nb_classes))
+
                     for i in range(len(self.train_noisy_labels)):
                         T[self.train_labels[i]][self.train_noisy_labels[i]] += 1
+
                     T = T/np.sum(T, axis=1)
+
                     print(f'Noise transition matrix is \n{T}')
-                    train_noisy_labels = multiclass_noisify(y=np.array(self.train_labels), P=T,
-                                                            random_state=0)  # np.random.randint(1,10086)
+
+                    train_noisy_labels = multiclass_noisify(y=np.array(
+                        self.train_labels), P=T, random_state=0)  # np.random.randint(1,10086)
+
                     self.train_noisy_labels = train_noisy_labels.tolist()
+
                     T = np.zeros((self.nb_classes, self.nb_classes))
+
                     for i in range(len(self.train_noisy_labels)):
                         T[self.train_labels[i]][self.train_noisy_labels[i]] += 1
+
                     T = T/np.sum(T, axis=1)
+
                     print(f'New synthetic noise transition matrix is \n{T}')
 
                 for i in range(len(self.train_noisy_labels)):
                     idx_each_class_noisy[self.train_noisy_labels[i]].append(i)
+
                 class_size_noisy = [len(idx_each_class_noisy[i])
                                     for i in range(10)]
+
                 self.noise_prior = np.array(
                     class_size_noisy)/sum(class_size_noisy)
+
                 print(
                     f'The noisy data ratio in each class is {self.noise_prior}')
+
                 self.noise_or_not = np.transpose(
                     self.train_noisy_labels) != np.transpose(self.train_labels)
+
                 self.actual_noise_rate = np.sum(self.noise_or_not)/50000
+
                 print('over all noise rate is ', self.actual_noise_rate)
+
         else:
             f = self.test_list[0][0]
             file = os.path.join(self.root, self.base_folder, f)
             fo = open(file, 'rb')
+
             if sys.version_info[0] == 2:
                 entry = pickle.load(fo)
             else:
                 entry = pickle.load(fo, encoding='latin1')
+
             self.test_data = entry['data']
+
             if 'labels' in entry:
                 self.test_labels = entry['labels']
             else:
                 self.test_labels = entry['fine_labels']
+
             fo.close()
             self.test_data = self.test_data.reshape((10000, 3, 32, 32))
             self.test_data = self.test_data.transpose(
                 (0, 2, 3, 1))  # convert to HWC
 
     def load_label(self):
-        #NOTE only load manual training label
+        # NOTE only load manual training label
+
         noise_label = torch.load(self.noise_path)
+
         if isinstance(noise_label, dict):
             if "clean_label" in noise_label.keys():
                 clean_label = torch.tensor(noise_label['clean_label'])
                 assert torch.sum(torch.tensor(
                     self.train_labels) - clean_label) == 0
+
                 print(f'Loaded {self.noise_type} from {self.noise_path}.')
                 print(
                     f'The overall noise rate is {1-np.mean(clean_label.numpy() == noise_label[self.noise_type])}')
+
             return noise_label[self.noise_type].reshape(-1)
+
         else:
             raise Exception('Input Error')
 
@@ -192,11 +219,14 @@ class CIFAR10(data.Dataset):
 
     def _check_integrity(self):
         root = self.root
+
         for fentry in (self.train_list + self.test_list):
             filename, md5 = fentry[0], fentry[1]
             fpath = os.path.join(root, self.base_folder, filename)
+
             if not check_integrity(fpath, md5):
                 return False
+
         return True
 
     def download(self):
@@ -219,16 +249,25 @@ class CIFAR10(data.Dataset):
 
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+
         fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
+
         tmp = 'train' if self.train is True else 'test'
+
         fmt_str += '    Split: {}\n'.format(tmp)
+
         fmt_str += '    Root Location: {}\n'.format(self.root)
+
         tmp = '    Transforms (if any): '
+
         fmt_str += '{0}{1}\n'.format(
             tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+
         tmp = '    Target Transforms (if any): '
+
         fmt_str += '{0}{1}'.format(
             tmp, self.target_transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+
         return fmt_str
 
 
@@ -286,6 +325,7 @@ class CIFAR100(CIFAR10):
         if self.train:
             self.train_data = []
             self.train_labels = []
+
             for fentry in self.train_list:
                 f = fentry[0]
                 file = os.path.join(self.root, self.base_folder, f)
@@ -303,53 +343,71 @@ class CIFAR100(CIFAR10):
 
             self.train_data = np.concatenate(self.train_data)
             self.train_data = self.train_data.reshape((50000, 3, 32, 32))
-            self.train_data = self.train_data.transpose(
-                (0, 2, 3, 1))  # convert to HWC
+            self.train_data = self.train_data.transpose((0, 2, 3, 1))  # convert to HWC
+
             if noise_type != 'clean':
                 # load noise label
                 train_noisy_labels = self.load_label()
                 self.train_noisy_labels = train_noisy_labels.tolist()
+
                 print(f'noisy labels loaded from {self.noise_type}')
+
                 if not is_human:
                     T = np.zeros((self.nb_classes, self.nb_classes))
+
                     for i in range(len(self.train_noisy_labels)):
                         T[self.train_labels[i]][self.train_noisy_labels[i]] += 1
+
                     T = T/np.sum(T, axis=1)
+
                     print(f'Noise transition matrix is \n{T}')
-                    train_noisy_labels = multiclass_noisify(y=np.array(self.train_labels), P=T,
-                                                            random_state=0)  # np.random.randint(1,10086)
+
+                    train_noisy_labels = multiclass_noisify(y=np.array(self.train_labels), P=T, random_state=0)  # np.random.randint(1,10086)
+
                     self.train_noisy_labels = train_noisy_labels.tolist()
+
                     T = np.zeros((self.nb_classes, self.nb_classes))
+
                     for i in range(len(self.train_noisy_labels)):
                         T[self.train_labels[i]][self.train_noisy_labels[i]] += 1
+
                     T = T/np.sum(T, axis=1)
+
                     print(f'New synthetic noise transition matrix is \n{T}')
+
                 for i in range(len(self.train_labels)):
                     idx_each_class_noisy[self.train_noisy_labels[i]].append(i)
-                class_size_noisy = [len(idx_each_class_noisy[i])
-                                    for i in range(100)]
-                self.noise_prior = np.array(
-                    class_size_noisy)/sum(class_size_noisy)
-                print(
-                    f'The noisy data ratio in each class is {self.noise_prior}')
-                self.noise_or_not = np.transpose(
-                    self.train_noisy_labels) != np.transpose(self.train_labels)
+
+                class_size_noisy = [len(idx_each_class_noisy[i]) for i in range(100)]
+
+                self.noise_prior = np.array(class_size_noisy)/sum(class_size_noisy)
+
+                print(f'The noisy data ratio in each class is {self.noise_prior}')
+
+                self.noise_or_not = np.transpose(self.train_noisy_labels) != np.transpose(self.train_labels)
+
                 self.actual_noise_rate = np.sum(self.noise_or_not)/50000
+
                 print('over all noise rate is ', self.actual_noise_rate)
+
         else:
             f = self.test_list[0][0]
             file = os.path.join(self.root, self.base_folder, f)
             fo = open(file, 'rb')
+
             if sys.version_info[0] == 2:
                 entry = pickle.load(fo)
             else:
                 entry = pickle.load(fo, encoding='latin1')
+
             self.test_data = entry['data']
+
             if 'labels' in entry:
                 self.test_labels = entry['labels']
             else:
                 self.test_labels = entry['fine_labels']
+
             fo.close()
+
             self.test_data = self.test_data.reshape((10000, 3, 32, 32))
-            self.test_data = self.test_data.transpose(
-                (0, 2, 3, 1))  # convert to HWC
+            self.test_data = self.test_data.transpose((0, 2, 3, 1))  # convert to HWC
