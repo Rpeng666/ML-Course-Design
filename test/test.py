@@ -1,6 +1,14 @@
 import torch
+from torchvision import transforms
+import numpy as np
+import pickle
 
 
-a = torch.zeros(size=(2,3,4))
 
-print(a[0])
+with open('./origin_data/data_batch_1', 'rb') as file:
+
+    data = pickle.load(file, encoding='bytes')
+
+    data = data[b'data']
+
+print(data)

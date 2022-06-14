@@ -65,10 +65,6 @@ for epoch in range(all_epoch):
 
             acc_count += (target == torch.argmax(output, dim = 1)).sum().item()
 
-            print((target == torch.argmax(output, dim = 1)).sum())
-
-        print('debug: ', acc_count, len(test_loader))
-
         acc = acc_count/(len(test_loader)*batch_size)
 
         print(f'Test Acc: {acc}')

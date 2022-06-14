@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from matplotlib.pyplot import axis
 import torch 
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 import pickle
 import numpy as np
+from torchvision import transforms
 
 
 
@@ -40,9 +42,11 @@ class My_DataLoader:
         self.gray_img = self.vector2img(self.train_data[:, :3072])
 
 
-    def get_data_loader(self, noise_type: str, batch_size):
+
+    def get_traindata_loader(self, noise_type: str, batch_size):
         
         if noise_type == 'clean_label':
+
             data_set = TensorDataset(self.gray_img, self.train_data[:,3072])
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
@@ -87,6 +91,28 @@ class My_DataLoader:
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
 
+    def get_testdata_loader(self, batch_size):
+
+        with open('./origin_data/test_batch', 'rb') as file:
+            data = pickle.load(file, encoding='bytes')
+
+            temp = data[b'data']
+
+            label = np.array(data[b'labels']).reshape(-1, 1)
+
+            temp = torch.Tensor(temp)
+
+            label = torch.Tensor(label).reshape(-1)
+
+            gray_img = self.vector2img(temp)
+
+            test_set = TensorDataset(gray_img, label)
+
+            test_loader = DataLoader(test_set, batch_size= batch_size, shuffle= True)
+
+            return test_loader
+
+
     def vector2img(self, all_img_tensor):
         '''从rgb图像向量转化成灰度图'''
 
@@ -100,6 +126,9 @@ class My_DataLoader:
             g = img_tensor[1,:].reshape(32,32)
             b = img_tensor[2,:].reshape(32,32)
 
-            result[index] = (r*0.299 + g*0.587 + b+0.114).reshape(1,32,32)
+            gray_img = (r*0.299 + g*0.587 + b+0.114)
+            gray_img = (gray_img - gray_img.mean())/gray_img.std()
+
+            result[index] = gray_img.reshape(1,32,32)
 
         return result
