@@ -37,9 +37,19 @@ class My_DataLoader:
                     self.train_data = np.concatenate([self.train_data, temp])
 
         self.noise_label = torch.load('./baseline_ResNet/data/CIFAR-10_human.pt')
-        self.train_data = torch.Tensor(self.train_data)
+        self.train_data = torch.Tensor(self.train_data[:,:3072])
 
-        self.gray_img = self.vector2img(self.train_data[:, :3072])
+        self.img_matrix = self.vector2img(self.train_data)
+
+        self.mean = torch.zeros(size=(3,))
+        self.std = torch.zeros(size=(3,))
+
+        for i in range(3):
+            self.mean[i] = self.img_matrix[:, i, :, :].mean()
+            self.std[i] = self.img_matrix[:, i, : , :].std()
+
+        for i in range(3):
+            self.img_matrix[:,i,:,:] = (self.img_matrix[:,i,:,:] - self.mean[i])/self.std[i]
 
 
 
@@ -47,7 +57,10 @@ class My_DataLoader:
         
         if noise_type == 'clean_label':
 
-            data_set = TensorDataset(self.gray_img, self.train_data[:,3072])
+            clean_label = torch.Tensor(self.noise_label['clean_label'])
+
+            data_set = TensorDataset(self.img_matrix, clean_label)
+
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
 
@@ -55,7 +68,7 @@ class My_DataLoader:
 
             aggre_label = torch.Tensor(self.noise_label['aggre_label'])
 
-            data_set = TensorDataset(self.gray_img, aggre_label)
+            data_set = TensorDataset(self.img_matrix, aggre_label)
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
 
@@ -63,7 +76,7 @@ class My_DataLoader:
 
             worse_label = torch.Tensor(self.noise_label['worse_label'])
 
-            data_set = TensorDataset(self.gray_img, worse_label)
+            data_set = TensorDataset(self.img_matrix, worse_label)
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
 
@@ -71,7 +84,7 @@ class My_DataLoader:
 
             random_label1 = torch.Tensor(self.noise_label['random_label1'])
 
-            data_set = TensorDataset(self.gray_img, random_label1)
+            data_set = TensorDataset(self.img_matrix, random_label1)
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
 
@@ -79,7 +92,7 @@ class My_DataLoader:
 
             random_label2 = torch.Tensor(self.noise_label['random_label2'])
 
-            data_set = TensorDataset(self.gray_img, random_label2)
+            data_set = TensorDataset(self.img_matrix, random_label2)
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
         
@@ -87,7 +100,7 @@ class My_DataLoader:
 
             random_label3 = torch.Tensor(self.noise_label['random_label3'])
 
-            data_set = TensorDataset(self.gray_img, random_label3)
+            data_set = TensorDataset(self.img_matrix, random_label3)
             return DataLoader(data_set, batch_size=batch_size, shuffle= True)
 
 
@@ -106,6 +119,9 @@ class My_DataLoader:
 
             gray_img = self.vector2img(temp)
 
+            for i in range(3):
+                gray_img[:,i,:,:] = (gray_img[:,i,:,:] - self.mean[i])/self.std[i]
+
             test_set = TensorDataset(gray_img, label)
 
             test_loader = DataLoader(test_set, batch_size= batch_size, shuffle= True)
@@ -113,10 +129,14 @@ class My_DataLoader:
             return test_loader
 
 
-    def vector2img(self, all_img_tensor):
-        '''从rgb图像向量转化成灰度图'''
+    def get_norm_params(self):
 
-        result = torch.zeros(size=(all_img_tensor.shape[0], 1, 32, 32))
+        return self.mean, self.std
+
+
+    def vector2img(self, all_img_tensor):
+
+        result = torch.zeros(size=(all_img_tensor.shape[0], 3, 32, 32))
 
         for index, img_tensor in enumerate(all_img_tensor):
 
@@ -126,9 +146,8 @@ class My_DataLoader:
             g = img_tensor[1,:].reshape(32,32)
             b = img_tensor[2,:].reshape(32,32)
 
-            gray_img = (r*0.299 + g*0.587 + b+0.114)
-            gray_img = (gray_img - gray_img.mean())/gray_img.std()
-
-            result[index] = gray_img.reshape(1,32,32)
+            result[index][0] = r
+            result[index][1] = g
+            result[index][2] = b
 
         return result

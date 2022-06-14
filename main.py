@@ -1,4 +1,3 @@
-from numpy import dtype
 from src.DataLoader import My_DataLoader
 from src.AutoEncoder.Encoder import Encoder
 import torch.nn as nn
@@ -13,11 +12,13 @@ encoder = encoder.cuda()
 loss_fn = nn.CrossEntropyLoss().cuda()
 
 # optimizer = optim.Adam(encoder.parameters())                                                                            
-optimizer = optim.SGD(encoder.parameters(), lr=0.001)
+optimizer = optim.SGD(encoder.parameters(), lr=0.001, weight_decay=0.0005, momentum=0.9)
+# optimizer = optim.SGD(encoder.parameters(), lr = 0.01)
+# optimizer = optim.RMSprop(encoder.parameters(), lr = 0.1, alpha=0.9)
 
 my_loder = My_DataLoader()
-
-batch_size = 128
+ 
+batch_size = 256
 
 train_loader = my_loder.get_traindata_loader('clean_label', batch_size=batch_size)
 
@@ -34,7 +35,7 @@ for epoch in range(all_epoch):
     for i, (data, target) in enumerate(train_loader):
         
         data = data.cuda()
-        target = target.long().cuda()                 
+        target = target.long().cuda()             
 
         output = encoder(data)
 
@@ -68,5 +69,8 @@ for epoch in range(all_epoch):
         acc = acc_count/(len(test_loader)*batch_size)
 
         print(f'Test Acc: {acc}')
+
+        if(acc > 0.8):
+            torch.save(encoder, f'encoder_{acc}_{epoch}.pt')
 
     
