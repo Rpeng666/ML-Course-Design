@@ -69,9 +69,10 @@ class Encoder(nn.Module):
         self.flatten = nn.Flatten()
 
         self.fc1 = nn.Linear(16384, 516)
+        self.drop1 = nn.Dropout()
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(516,64)
-        self.drop = nn.Dropout()
+        self.drop2 = nn.Dropout()
         self.fc3 = nn.Linear(64, 10)
 
         self.softmax = nn.Softmax(dim = 1)
@@ -91,9 +92,10 @@ class Encoder(nn.Module):
         X = self.flatten(X)
 
         X = self.fc1(X)
+        X = self.drop1(X)
         X = self.relu(X)
         X = self.fc2(X)
-        X = self.drop(X)
+        X = self.drop2(X)
         X = self.fc3(X)
         X = self.softmax(X)
 
