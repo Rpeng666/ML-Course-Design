@@ -42,6 +42,8 @@ all_iter = len(train_dataloader)
 
 all_epoch = 500
 
+log_file = open('./log/encoder/history.log', 'w', encoding= 'utf-8')
+
 for epoch in range(all_epoch):
 
     encoder.train()
@@ -64,6 +66,7 @@ for epoch in range(all_epoch):
         optimizer.step()
 
         if(i %10 == 0):
+            print(f'epoch:{epoch}/ {all_epoch} iter: {i}/ {all_iter} loss: {loss} acc: {acc}', file = log_file, flush = True)
             print(f'epoch:{epoch}/ {all_epoch} iter: {i}/ {all_iter} loss: {loss} acc: {acc}')
 
     encoder.eval()
@@ -82,9 +85,12 @@ for epoch in range(all_epoch):
 
         acc = acc_count/(len(test_dataloader)*batch_size)
 
+        print(f'Test Acc: {acc}', file = log_file, flush = True)
         print(f'Test Acc: {acc}')
 
         if(acc > 0.8):
             torch.save(encoder, f'encoder_{acc}_{epoch}.pt')
+
+log_file.close()
 
     
