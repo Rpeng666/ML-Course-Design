@@ -5,10 +5,7 @@
  # @ Modified time: 2022-06-13 21:52:19
  '''
 
-import torch
 import torch.nn as nn
-import torch.functional as F
-import numpy as np
 
 
 class BaseBlock(nn.Module):
@@ -66,16 +63,24 @@ class Encoder(nn.Module):
 
         self.conv_pool4 = BaseBlock(128, 256, 4, 0, 1, 3, 1, 0)
 
-        self.flatten = nn.Flatten()
+        self.conv5 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size= 4)
 
-        self.fc1 = nn.Linear(16384, 516)
-        self.drop1 = nn.Dropout()
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(516,64)
-        self.drop2 = nn.Dropout()
-        self.fc3 = nn.Linear(64, 10)
+        self.relu5 = nn.ReLU()
+        self.bn4 = nn.BatchNorm2d(512)
 
-        self.softmax = nn.Softmax(dim = 1)
+        self.conv6 = nn.Conv2d(in_channels= 512, out_channels= 512, kernel_size=5)
+
+        # self.flatten = nn.Flatten()
+
+        # self.fc1 = nn.Linear(16384, 1024)
+
+        # self.drop1 = nn.Dropout()
+        # self.relu = nn.ReLU()
+        # self.fc2 = nn.Linear(1024,80)
+        # self.drop2 = nn.Dropout()
+        # self.fc3 = nn.Linear(516, 10)
+
+        # self.softmax = nn.Softmax(dim = 1)
 
     def forward(self, X):
 
@@ -88,18 +93,22 @@ class Encoder(nn.Module):
         X = self.bn3(X)
 
         X = self.conv_pool4(X)
-
-        X = self.flatten(X)
-
-        X = self.fc1(X)
-        X = self.drop1(X)
-        X = self.relu(X)
-        X = self.fc2(X)
-        X = self.drop2(X)
-        X = self.fc3(X)
-        X = self.softmax(X)
-
         
+        X = self.conv5(X)
+
+        X = self.relu5(X)
+        X = self.bn4(X)
+        X = self.conv6(X)
+
+        # X = self.flatten(X)
+
+        # X = self.fc1(X)
+        # X = self.drop1(X)
+        # X = self.relu(X)
+        # X = self.fc2(X)
+        # X = self.drop2(X)
+        # X = self.fc3(X)
+        # X = self.softmax(X)
 
         return X
         

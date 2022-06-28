@@ -1,96 +1,36 @@
-'''
- # @ Author: Rpeng
- # @ Create Time: 2022-06-12 22:49:32
- # @ Modified by: Rpeng
- # @ Modified time: 2022-06-15 12:50:54
- '''
-
-from src.DataLoader import *
-from src.AutoEncoder.Encoder import Encoder
-import torch.nn as nn
-import torch.optim as optim
+from src.DataLoader import CIFAR_10_Test, CIFAR_10_train
 import torch
-from torch.utils.data import DataLoader
-from torchvision import transforms
+from PIL import Image
+import numpy as np
+from random import randint
 
 
+model = torch.load('./log/autoencoder/autoencoder_110_0.05368_512dim.pt')
+torch.save
+train_set = CIFAR_10_train('clean_label')
 
-encoder = Encoder()
+mean, std = train_set.get_norm_params()
 
-encoder = encoder.cuda()
+def draw_img(temp, file_name):
+    temp = temp.reshape(3,32,32)
 
-loss_fn = nn.CrossEntropyLoss().cuda()
+    img_data = np.zeros(shape=(32,32,3))
 
-batch_size = 256
+    img_data[:,:,0] = temp[0,:,:]*std[0].item() + mean[0].item()
+    img_data[:,:,1] = temp[1,:,:]*std[1].item() + mean[1].item()
+    img_data[:,:,2] = temp[2,:,:]*std[2].item() + mean[2].item()
 
-# optimizer = optim.Adam(encoder.parameters())                                                                            
-optimizer = optim.SGD(encoder.parameters(), lr=0.001, weight_decay=0.0005, momentum=0.9)
-# optimizer = optim.SGD(encoder.parameters(), lr = 0.01)
-# optimizer = optim.RMSprop(encoder.parameters(), lr = 0.1, alpha=0.9)
+    origin_img = Image.fromarray(np.uint8(img_data), mode='RGB')
 
+    origin_img.save(f'{file_name}')
 
-train_dataset = CIFAR_10_train('clean_label')
-train_dataloader = DataLoader(train_dataset, batch_size= batch_size, shuffle= True)
+for i in range(5):
+    rd_num = randint(0, len(train_set))
+    img_tensor, label = train_set[rd_num]
 
-norm_params = train_dataset.get_norm_params()
+    out_img_tensor = model(img_tensor.reshape(1,3,32,32).cuda()).cpu()
 
-test_dataset = CIFAR_10_Test(norm_params)
-test_dataloader = DataLoader(test_dataset, batch_size= batch_size, shuffle= True)
+    draw_img(img_tensor, f'{i}_{label}_before.png')
 
+    draw_img(out_img_tensor.detach().numpy(), f'{i}_{label}_after.png')
 
-all_iter = len(train_dataloader)
-
-all_epoch = 500
-
-log_file = open('./log/encoder/history.log', 'w', encoding= 'utf-8')
-
-for epoch in range(all_epoch):
-
-    encoder.train()
-
-    for i, (data, target) in enumerate(train_dataloader):
-        
-        data = data.cuda()
-        target = target.long().cuda()          
-
-        output = encoder(data)
-
-        acc = (target == torch.argmax(output, dim = 1)).sum()/output.shape[0]
-
-        loss = loss_fn(output, target)
-
-        optimizer.zero_grad()
-
-        loss.backward()
-
-        optimizer.step()
-
-        if(i %10 == 0):
-            print(f'epoch:{epoch}/ {all_epoch} iter: {i}/ {all_iter} loss: {loss} acc: {acc}', file = log_file, flush = True)
-            print(f'epoch:{epoch}/ {all_epoch} iter: {i}/ {all_iter} loss: {loss} acc: {acc}')
-
-    encoder.eval()
-
-    with torch.no_grad():
-
-        acc_count = 0
-
-        for i, (data, target) in enumerate(test_dataloader):
-            data = data.cuda()
-            target = target.long().cuda()
-
-            output = encoder(data)
-
-            acc_count += (target == torch.argmax(output, dim = 1)).sum().item()
-
-        acc = acc_count/(len(test_dataloader)*batch_size)
-
-        print(f'Test Acc: {acc}', file = log_file, flush = True)
-        print(f'Test Acc: {acc}')
-
-        if(acc > 0.8):
-            torch.save(encoder, f'encoder_{acc}_{epoch}.pt')
-
-log_file.close()
-
-    

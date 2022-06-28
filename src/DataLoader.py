@@ -12,7 +12,6 @@ import numpy as np
 from torchvision import transforms
 
 
-
 class CIFAR_10_train(Dataset):
     def __init__(self, noise_type: str) -> None:
         '''获取所有的data,前3072列是特征,
@@ -48,15 +47,13 @@ class CIFAR_10_train(Dataset):
             self.mean[i] = self.train_data[:, i, :, :].mean()
             self.std[i] = self.train_data[:, i, : , :].std()
 
-        self.labels = torch.Tensor(self.all_noise_label[f'{noise_type}'])
+        self.labels = torch.Tensor(self.all_noise_label[f'{noise_type}']).long()
 
         self.transform = transforms.Compose([
             transforms.Normalize(self.mean, self.std),
             transforms.RandomCrop(32, padding = 4),
             transforms.RandomHorizontalFlip()
         ])
-
-
 
     def __getitem__(self, index: int):
 
@@ -112,7 +109,7 @@ class CIFAR_10_Test(Dataset):
 
             self.test_data = torch.Tensor(self.test_data)
 
-            self.label = torch.Tensor(self.label).reshape(-1)
+            self.label = torch.Tensor(self.label).reshape(-1).long()
 
             self.test_data = self.vector2img(self.test_data)
 
@@ -146,4 +143,3 @@ class CIFAR_10_Test(Dataset):
             result[index][2] = b
 
         return result
-
